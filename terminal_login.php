@@ -31,6 +31,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } else {
+        // Log failed terminal login attempt. Store a non-reversible fingerprint of the PIN, not the raw PIN.
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $pinFingerprint = isset($pin) ? substr(sha1((string)$pin), 0, 8) : 'none';
+        error_log(sprintf("Failed terminal login attempt: pin_fp=%s, ip=%s, ua=%s, time=%s", $pinFingerprint, $ip, $ua, date('c')));
         $error = 'Invalid PIN or inactive terminal.';
     }
 }
