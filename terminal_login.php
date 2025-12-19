@@ -1,10 +1,22 @@
 <?php
 require_once 'config.php';
+require_once 'rate_limit.php';
 
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pin = $_POST['pin'] ?? '';
+    // Rate-limit by IP and PIN fingerprint
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $pinFp = isset($pin) ? substr(sha1((string)$pin), 0, 8) : 'none';
+    $ipKey = 'term_ip:' . $ip;
+    $pinKey = 'term_pin:' . $pinFp;
+    $ipStatus = rl_check($ipKey, 30, 900); // 30 attempts per 15 min per IP
+    $pinStatus = rl_check($pinKey, 8, 900); // 8 attempts per 15 min per PIN fingerprint
+    if (!$ipStatus['allowed'] || !$pinStatus['allowed']) {
+        error_log(sprintf("Rate limit block for terminal login: pin_fp=%s, ip=%s, time=%s", $pinFp, $ip, date('c')));
+        $error = 'Too many attempts. Try again later.';
+    } else {
     $stmt = $pdo->prepare("SELECT * FROM terminals WHERE pin_code = ? AND is_active = 1 LIMIT 1");
     $stmt->execute([$pin]);
     $terminal = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -32,11 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     } else {
         // Log failed terminal login attempt. Store a non-reversible fingerprint of the PIN, not the raw PIN.
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        // $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $pinFingerprint = isset($pin) ? substr(sha1((string)$pin), 0, 8) : 'none';
-        error_log(sprintf("Failed terminal login attempt: pin_fp=%s, ip=%s, ua=%s, time=%s", $pinFingerprint, $ip, $ua, date('c')));
+        // $pinFingerprint = isset($pin) ? substr(sha1((string)$pin), 0, 8) : 'none';
+        // error_log(sprintf("Failed terminal login attempt: pin_fp=%s, ip=%s, ua=%s, time=%s", $pinFingerprint, $ip, $ua, date('c')));
+         error_log(sprintf("Failed terminal login attempt: pin_fp=%s, ip=%s, ua=%s, time=%s", $pinFp, $ip, $ua, date('c')));
         $error = 'Invalid PIN or inactive terminal.';
+         // increment rate limiter keys
+        rl_increment($ipKey);
+        rl_increment($pinKey);
     }
 }
 ?>
