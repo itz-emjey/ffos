@@ -13,7 +13,8 @@ try {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 } catch (Exception $e) {
-    die('DB connection failed');
+	 error_log('DB connection failed: ' . $e->getMessage());
+    //die('DB connection failed');
 }
 
 // ---- Admin credentials (simple) ----
