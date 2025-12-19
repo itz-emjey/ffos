@@ -11,6 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: admin_dashboard.php');
         exit;
     } else {
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        error_log(sprintf("Failed admin login attempt: username=%s, ip=%s, ua=%s, time=%s", $u, $ip, $ua, date('c')));
         $error = 'Invalid credentials';
     }
 }
