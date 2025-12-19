@@ -1,9 +1,13 @@
 <?php
 // api_teller_update_order.php
 require_once 'config.php';
+require_once 'api_auth.php';
 header('Content-Type: application/json');
 
-$tellerTerminalId = $_SESSION['terminal_id'] ?? null;
+// $tellerTerminalId = $_SESSION['terminal_id'] ?? null;
+// Require teller role for this endpoint and use DB-verified terminal id
+$terminal = require_terminal_types(['TELLER']);
+$tellerTerminalId = (int)$terminal['id'];
 
 $payloadJson = $_POST['payload'] ?? '';
 if (!$payloadJson) {
