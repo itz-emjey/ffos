@@ -1,7 +1,11 @@
 <?php
 // api_kitchen_ready_for_claim.php
 require_once 'config.php';
+require_once 'api_auth.php';
+
 header('Content-Type: application/json; charset=utf-8');
+// Only kitchen terminals should mark orders ready for claim
+require_terminal_types(['KITCHEN']);
 
 $orderId = isset($_POST['order_id']) ? (int)$_POST['order_id'] : 0;
 if ($orderId <= 0) {
