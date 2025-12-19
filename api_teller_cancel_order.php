@@ -1,8 +1,12 @@
 <?php
 // api_teller_cancel_order.php
 require_once 'config.php';
-$tellerTerminalId = $_SESSION['terminal_id'] ?? null;
+require_once 'api_auth.php';
+// $tellerTerminalId = $_SESSION['terminal_id'] ?? null;
 header('Content-Type: application/json');
+// Require teller role and canonicalize teller terminal id
+$terminal = require_terminal_types(['TELLER']);
+$tellerTerminalId = (int)$terminal['id'];
 
 $orderId = isset($_POST['order_id']) ? (int)$_POST['order_id'] : 0;
 if ($orderId <= 0) {
