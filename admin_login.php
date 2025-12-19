@@ -6,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u = $_POST['username'] ?? '';
     $p = $_POST['password'] ?? '';
     if ($u === ADMIN_USER && $p === ADMIN_PASS) {
+        session_regenerate_id(true);
         $_SESSION['admin'] = true;
         header('Location: admin_dashboard.php');
         exit;
