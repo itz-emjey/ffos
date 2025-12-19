@@ -5,9 +5,23 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u = $_POST['username'] ?? '';
     $p = $_POST['password'] ?? '';
+        // Rate-limit by IP and username to prevent brute-force
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $ipKey = 'admin_ip:' . $ip;
+    $userKey = 'admin_user:' . $u;
+    $ipStatus = rl_check($ipKey, 20, 900); // 20 attempts per 15 min per IP
+    $userStatus = rl_check($userKey, 10, 900); // 10 attempts per 15 min per username
+    if (!$ipStatus['allowed'] || !$userStatus['allowed']) {
+        // Too many attempts
+        error_log(sprintf("Rate limit block for admin login: username=%s, ip=%s, time=%s", $u, $ip, date('c')));
+        $error = 'Too many attempts. Try again later.';
+    } else {
     if ($u === ADMIN_USER && $p === ADMIN_PASS) {
         session_regenerate_id(true);
         $_SESSION['admin'] = true;
+        // Clear rate limit counters on success
+        rl_clear($ipKey);
+        rl_clear($userKey);
         header('Location: admin_dashboard.php');
         exit;
     } else {
@@ -15,6 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         error_log(sprintf("Failed admin login attempt: username=%s, ip=%s, ua=%s, time=%s", $u, $ip, $ua, date('c')));
         $error = 'Invalid credentials';
+                // increment rate limiter keys
+        rl_increment($ipKey);
+        rl_increment($userKey);
+    }
     }
 }
 ?>
