@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $terminal = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($terminal) {
+        session_regenerate_id(true);
         $_SESSION['terminal_id'] = $terminal['id'];
         $_SESSION['terminal_type'] = $terminal['type'];
         $_SESSION['employee_name'] = $terminal['employee_name'];
