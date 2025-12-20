@@ -26,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['terminal_id'] = $terminal['id'];
         $_SESSION['terminal_type'] = $terminal['type'];
         $_SESSION['employee_name'] = $terminal['employee_name'];
+        
+        // Clear rate limit counters on successful terminal login
+        if (isset($ipKey)) rl_clear($ipKey);
+        if (isset($pinKey)) rl_clear($pinKey);
 
         switch ($terminal['type']) {
             case 'CUSTOMER':
